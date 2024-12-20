@@ -1,101 +1,96 @@
+'use client'
+import { WalletConnectButton } from "@/components/walletConnectButton";
+import { ethers } from "ethers";
 import Image from "next/image";
+import { useState } from "react";
+import {contractAdds} from "@/utils/contractAdds"
+import abi from "@/utils/abis/bppabi";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+  const[pvtKey, setPvtKey] = useState<string>('');
+  const[arr, setArr] = useState<string>('');
+
+
+  async function contractSetup() {
+    try {
+      if (!pvtKey) {
+        throw new Error("Private key is required");
+      }
+
+      // Create provider using a public RPC URL
+      const provider = new ethers.providers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+      
+      // Create wallet instance from private key
+      const wallet = new ethers.Wallet(pvtKey, provider);
+      
+      const add = contractAdds.BPPContract;
+      
+      // Create contract instance with wallet
+      const contract = new ethers.Contract(add, abi, wallet);
+      
+      return contract;
+    } catch (err) {
+      console.error('Contract setup error:', err);
+      throw err;
+    }
+  }
+
+  async function migrate(){
+    try{
+      // Parse the array input
+      let parsedArrays;
+      try {
+        parsedArrays = JSON.parse(arr);
+        if (!Array.isArray(parsedArrays) || !parsedArrays.every(Array.isArray)) {
+          throw new Error("Input must be an array of arrays");
+        }
+      } catch (parseErr) {
+        console.error('Error parsing arrays:', parseErr);
+        alert('Please enter a valid array of arrays format: [[addr1,addr2],[addr3,addr4]]');
+        return;
+      }
+
+      const contract = await contractSetup();
+
+      parsedArrays.forEach(async(innerArray, index) => {
+        console.log(`Token ID ${index+1}:`, innerArray);
+        const tx = await contract.migrate(index+1, innerArray);
+        await tx.wait().then((receipt:any) => {
+          console.log('Tx receipt:', receipt);
+        });
+      });
+
+    }
+    catch(err){
+      console.log('Migrate error:', err);
+      throw err;
+    }
+  }
+
+
+  return (
+    <div className="w-screen h-screen flex flex-col items-center justify-center gap-20">
+      <h1 className="text-3xl font-bold">Hello BallPark Admin</h1>
+      <div className="absolute top-10 right-10">
+        <WalletConnectButton/>
+      </div>
+      <div className="w-64">
+        <p>Enter your private key:</p>
+        <input className="p-2 rounded-lg w-64 text-black" type="text" value={pvtKey} onChange={(e) => setPvtKey(e.target.value)} />
+      </div>
+
+      <div className="w-64">
+        <p>Enter array of array of addresses:</p>
+        <input className="p-2 rounded-lg w-64 text-black" type="text" value={arr} onChange={(e) => setArr(e.target.value)} />
+      </div>
+
+      <button 
+        onClick={migrate}
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+      >
+        Migrate
+      </button>
     </div>
   );
 }
