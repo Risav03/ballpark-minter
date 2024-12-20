@@ -25,6 +25,7 @@ export default function Home() {
       
       // Create wallet instance from private key
       const wallet = new ethers.Wallet(pvtKey, provider);
+      console.log(wallet);
       
       const add = contractAdds.BPPContract;
       
