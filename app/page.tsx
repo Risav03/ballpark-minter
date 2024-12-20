@@ -11,7 +11,7 @@ export default function Home() {
   const[pvtKey, setPvtKey] = useState<string>('');
   const[arr, setArr] = useState<string>('');
 
-  const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms));
+  const[sending, setSending]= useState<number>(0)
 
 
   async function contractSetup() {
@@ -21,7 +21,7 @@ export default function Home() {
       }
 
       // Create provider using a public RPC URL
-      const provider = new ethers.providers.AlchemyProvider("polygon-mainnet", "CA4eh0FjTxMenSW3QxTpJ7D-vWMSHVjq");
+      const provider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
       
       // Create wallet instance from private key
       const wallet = new ethers.Wallet(pvtKey, provider);
@@ -56,52 +56,65 @@ export default function Home() {
       }
   
       const contract = await contractSetup();
-      console.log('Contract setup complete:', contract);
   
-      // Use Promise.all for parallel execution
-      const migratePromises = parsedArrays.map(async (innerArray, index) => {
+      for(let i = 0; i < parsedArrays.length; i++) {
         try {
-          const tokenId = index + 1;
-          // console.log(`Starting migration for Token ID ${tokenId}:`, innerArray);
+          console.log(`Processing Token ID ${i+1}:`, parsedArrays[i]);
+          setSending(i+1);
+  
+          // First, estimate gas for this specific transaction
+          const gasEstimate = await contract.estimateGas.migrate(i+1, parsedArrays[i]);
           
-          const tx = await contract.migrate(tokenId, innerArray);
-          console.log(`Transaction submitted for Token ID ${tokenId}:`, tx.hash);
+          // Add 20% buffer to gas estimate
+          const gasLimit = gasEstimate.mul(120).div(100);
+  
+          console.log(`Estimated gas for token ${i+1}:`, gasEstimate.toString());
           
+          const tx = await contract.migrate(
+            i+1, 
+            parsedArrays[i],
+            {
+              gasLimit,
+              maxPriorityFeePerGas: ethers.utils.parseUnits("50", "gwei"), // Increased priority fee
+              maxFeePerGas: ethers.utils.parseUnits("150", "gwei"), // Increased max fee
+            }
+          );
+  
+          console.log(`Transaction submitted for token ${i+1}:`, tx.hash);
+  
           const receipt = await tx.wait();
-          console.log(`Migration completed for Token ID ${tokenId}:`, receipt);
-
-          await delay(1000);
           
-          return {
-            tokenId,
-            receipt,
-            status: 'success'
-          };
-        } catch (err:any) {
-          console.error(`Migration failed for Token ID ${index + 1}:`, err);
-          return {
-            tokenId: index + 1,
-            error: err.message,
-            status: 'failed'
-          };
+          if (receipt.status === 0) {
+            throw new Error(`Transaction failed for token ${i+1}`);
+          }
+          
+          console.log(`Transaction successful for token ${i+1}:`, receipt);
+  
+          // Wait 2 seconds between transactions
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (txError: any) {
+          console.error(`Error processing token ${i+1}:`, txError);
+          
+          // Check if it's a revert error
+          if (txError.code === 'CALL_EXCEPTION') {
+            try {
+              // Try to get more details about the revert
+              const reason = await contract.callStatic.migrate(i+1, parsedArrays[i]);
+              console.error('Revert reason:', reason);
+            } catch (revertError: any) {
+              console.error('Revert reason:', revertError.reason || revertError.message);
+            }
+          }
+          
+          // Ask user if they want to continue with next token
+          if (!confirm(`Failed to process token ${i+1}. Continue with next token?`)) {
+            throw txError; // Stop the entire process if user chooses
+          }
         }
-      });
-  
-      const results = await Promise.all(migratePromises);
-      
-      // Check for any failed migrations
-      const failures = results.filter(r => r.status === 'failed');
-      if (failures.length > 0) {
-        console.error('Some migrations failed:', failures);
-        alert(`${failures.length} migrations failed. Check console for details.`);
-      } else {
-        console.log('All migrations completed successfully:', results);
       }
-  
-      return results;
-    } catch (err) {
-      console.error('Fatal migration error:', err);
-      alert('Migration process failed. Check console for details.');
+    }
+    catch(err) {
+      console.error('Migration error:', err);
       throw err;
     }
   }
@@ -129,6 +142,9 @@ export default function Home() {
       >
         Migrate
       </button>
+
+      <h2>Sending: {sending} </h2>
+
     </div>
   );
 }
