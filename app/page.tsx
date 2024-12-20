@@ -12,6 +12,8 @@ export default function Home() {
   const[arr, setArr] = useState<string>('');
 
   const[sending, setSending]= useState<number>(0)
+  const[errors, setErrors]= useState<number[]>([])
+
 
 
   async function contractSetup() {
@@ -66,7 +68,7 @@ export default function Home() {
           const gasEstimate = await contract.estimateGas.migrate(i+1, parsedArrays[i]);
           
           // Add 20% buffer to gas estimate
-          const gasLimit = gasEstimate.mul(120).div(100);
+          const gasLimit = gasEstimate.mul(130).div(100);
   
           console.log(`Estimated gas for token ${i+1}:`, gasEstimate.toString());
           
@@ -75,8 +77,8 @@ export default function Home() {
             parsedArrays[i],
             {
               gasLimit,
-              maxPriorityFeePerGas: ethers.utils.parseUnits("50", "gwei"), // Increased priority fee
-              maxFeePerGas: ethers.utils.parseUnits("150", "gwei"), // Increased max fee
+              maxPriorityFeePerGas: ethers.utils.parseUnits("70", "gwei"), // Increased priority fee
+              maxFeePerGas: ethers.utils.parseUnits("170", "gwei"), // Increased max fee
             }
           );
   
@@ -94,6 +96,8 @@ export default function Home() {
           await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (txError: any) {
           console.error(`Error processing token ${i+1}:`, txError);
+
+          setErrors([...errors, i+1]);
           
           // Check if it's a revert error
           if (txError.code === 'CALL_EXCEPTION') {
@@ -144,6 +148,10 @@ export default function Home() {
       </button>
 
       <h2>Sending: {sending} </h2>
+      <h2 className="flex flex-wrap gap-2">Error tokens: {errors.map((item:any)=>(
+        <h2>{item}</h2>
+      ))} </h2>
+
 
     </div>
   );
