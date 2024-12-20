@@ -11,6 +11,8 @@ export default function Home() {
   const[pvtKey, setPvtKey] = useState<string>('');
   const[arr, setArr] = useState<string>('');
 
+  const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms));
+
 
   async function contractSetup() {
     try {
@@ -19,7 +21,7 @@ export default function Home() {
       }
 
       // Create provider using a public RPC URL
-      const provider = new ethers.providers.JsonRpcProvider("https://polygon-mainnet.g.alchemy.com/v2/CA4eh0FjTxMenSW3QxTpJ7D-vWMSHVjq");
+      const provider = new ethers.providers.AlchemyProvider("polygon-mainnet", "CA4eh0FjTxMenSW3QxTpJ7D-vWMSHVjq");
       
       // Create wallet instance from private key
       const wallet = new ethers.Wallet(pvtKey, provider);
@@ -59,13 +61,15 @@ export default function Home() {
       const migratePromises = parsedArrays.map(async (innerArray, index) => {
         try {
           const tokenId = index + 1;
-          console.log(`Starting migration for Token ID ${tokenId}:`, innerArray);
+          // console.log(`Starting migration for Token ID ${tokenId}:`, innerArray);
           
           const tx = await contract.migrate(tokenId, innerArray);
           console.log(`Transaction submitted for Token ID ${tokenId}:`, tx.hash);
           
           const receipt = await tx.wait();
           console.log(`Migration completed for Token ID ${tokenId}:`, receipt);
+
+          await delay(1000);
           
           return {
             tokenId,
