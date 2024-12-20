@@ -37,8 +37,8 @@ export default function Home() {
     }
   }
 
-  async function migrate(){
-    try{
+  async function migrate() {
+    try {
       // Parse the array input
       let parsedArrays;
       try {
@@ -51,21 +51,52 @@ export default function Home() {
         alert('Please enter a valid array of arrays format: [[addr1,addr2],[addr3,addr4]]');
         return;
       }
-
+  
       const contract = await contractSetup();
-      console.log(contract);
-
-      parsedArrays.forEach(async(innerArray, index) => {
-        console.log(`Token ID ${index+1}:`, innerArray);
-        const tx = await contract.migrate(index+1, innerArray);
-        await tx.wait().then((receipt:any) => {
-          console.log('Tx receipt:', receipt);
-        });
+      console.log('Contract setup complete:', contract);
+  
+      // Use Promise.all for parallel execution
+      const migratePromises = parsedArrays.map(async (innerArray, index) => {
+        try {
+          const tokenId = index + 1;
+          console.log(`Starting migration for Token ID ${tokenId}:`, innerArray);
+          
+          const tx = await contract.migrate(tokenId, innerArray);
+          console.log(`Transaction submitted for Token ID ${tokenId}:`, tx.hash);
+          
+          const receipt = await tx.wait();
+          console.log(`Migration completed for Token ID ${tokenId}:`, receipt);
+          
+          return {
+            tokenId,
+            receipt,
+            status: 'success'
+          };
+        } catch (err:any) {
+          console.error(`Migration failed for Token ID ${index + 1}:`, err);
+          return {
+            tokenId: index + 1,
+            error: err.message,
+            status: 'failed'
+          };
+        }
       });
-
-    }
-    catch(err){
-      console.log('Migrate error:', err);
+  
+      const results = await Promise.all(migratePromises);
+      
+      // Check for any failed migrations
+      const failures = results.filter(r => r.status === 'failed');
+      if (failures.length > 0) {
+        console.error('Some migrations failed:', failures);
+        alert(`${failures.length} migrations failed. Check console for details.`);
+      } else {
+        console.log('All migrations completed successfully:', results);
+      }
+  
+      return results;
+    } catch (err) {
+      console.error('Fatal migration error:', err);
+      alert('Migration process failed. Check console for details.');
       throw err;
     }
   }
