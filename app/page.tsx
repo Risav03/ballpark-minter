@@ -19,7 +19,7 @@ export default function Home() {
       }
 
       // Create provider using a public RPC URL
-      const provider = new ethers.providers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+      const provider = new ethers.providers.JsonRpcProvider("https://polygon-mainnet.g.alchemy.com/v2/CA4eh0FjTxMenSW3QxTpJ7D-vWMSHVjq");
       
       // Create wallet instance from private key
       const wallet = new ethers.Wallet(pvtKey, provider);
@@ -28,6 +28,7 @@ export default function Home() {
       
       // Create contract instance with wallet
       const contract = new ethers.Contract(add, abi, wallet);
+      console.log('Contract:', contract);
       
       return contract;
     } catch (err) {
@@ -52,6 +53,7 @@ export default function Home() {
       }
 
       const contract = await contractSetup();
+      console.log(contract);
 
       parsedArrays.forEach(async(innerArray, index) => {
         console.log(`Token ID ${index+1}:`, innerArray);
