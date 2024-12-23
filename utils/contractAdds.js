@@ -1,3 +1,3 @@
 export const contractAdds = {
-    BPPContract : "0x767f791fC2b246e5137AAA389F5C0f4f85a59BD5",
+    BPPContract : "0x76d47b56ff9a370423c1765a02290226c089a755",
 }
