@@ -71,7 +71,7 @@ export const useAdminHooks = () => {
         setLoading(true);
         const contract = await contractSetup();
         console.log(contract);
-        await contract?.setCustomerURI(migratedURI);
+        await contract?.setCustomURI(migratedURI);
       }
       catch(err){
         console.log(err);

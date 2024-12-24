@@ -22,7 +22,10 @@ export const AdminHolder = ({ migratedURI, setMigratedURI, baseURI, setBaseURI, 
           <h2 className='text-2xl font-bold text-green-200'>Changing Collection details</h2>
           <div className='flex gap-20'>
             <div className="flex flex-col gap-3">
-              <h2 className="font-bold">Change Migrated NFTs URI</h2>
+              <div>
+                <h2 className="font-bold">Change Migrated NFTs URI (1-117)</h2>
+                <h3 className='text-xs'>https://gateway.pinata.cloud/ipfs/hash/</h3>
+              </div>
               <input type="text" placeholder="Migrated URI" className="border-2 border-black p-2 rounded-lg w-64 text-black" value={migratedURI} onChange={(e) => { setMigratedURI(e.target.value) }} />
               <button onClick={changeMigratedUri} className="bg-slate-500 font-bold w-20 rounded-lg px-3 py-2 hover:bg-slate-500 duration-200 text-white hover:-translate-y-1">Execute</button>
             </div>
@@ -74,7 +77,7 @@ export const AdminHolder = ({ migratedURI, setMigratedURI, baseURI, setBaseURI, 
         <div className="bg-blue-400/20 rounded-lg p-4">
         <h2 className='text-blue-200 text-2xl font-bold'>Mint Price</h2>
           <div className="flex flex-col gap-3">
-            <h2 className="font-bold mb-2">Change mint price (ETH)</h2>
+            <h2 className="font-bold mb-2">Change mint price (POL)</h2>
             <input type="text" placeholder="Change price" className="border-2 border-black p-2 rounded-lg w-64 text-black" value={price} onChange={(e) => { setPrice(e.target.value) }} />
             <button onClick={changeMintPrice} className="bg-slate-500 font-bold w-20 rounded-lg px-3 py-2 hover:bg-slate-500 duration-200 text-white hover:-translate-y-1">Execute</button>
           </div>
